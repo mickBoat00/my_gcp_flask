@@ -103,7 +103,7 @@ def generate_1000():
     res = []
     query = ds.query(kind='User')
     for x in query.fetch(limit=5):
-        res.append(x.name)
+        res.append(x.first)
 
     output = f"{'-'.join(res)}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
