@@ -105,7 +105,7 @@ def generate_1000():
     for x in query.fetch(limit=5):
         res.append(x.name)
 
-    output = f"{'\n'.join(res)}"
+    output = f"{'-'.join(res)}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
