@@ -16,22 +16,76 @@ import signal
 import sys
 from types import FrameType
 
-from flask import Flask
+from flask import Flask, request
 
 from utils.logging import logger
+
+import logging
+import socket
+
+from google.cloud import datastore
 
 app = Flask(__name__)
 
 
-@app.route("/")
-def hello() -> str:
-    # Use basic logging with custom fields
-    logger.info(logField="custom-entry", arbitraryField="custom-entry")
+import datetime
 
-    # https://cloud.google.com/run/docs/logging#correlate-logs
-    logger.info("Child logger with trace Id.")
 
-    return "Hello, World!"
+
+app = Flask(__name__)
+
+
+def is_ipv6(addr):
+    """Checks if a given address is an IPv6 address."""
+    try:
+        socket.inet_pton(socket.AF_INET6, addr)
+        return True
+    except socket.error:
+        return False
+
+
+# [START gae_flex_datastore_app]
+@app.route('/')
+def index():
+    ds = datastore.Client()
+
+    user_ip = request.remote_addr
+
+    # Keep only the first two octets of the IP address.
+    if is_ipv6(user_ip):
+        user_ip = ':'.join(user_ip.split(':')[:2])
+    else:
+        user_ip = '.'.join(user_ip.split('.')[:2])
+
+    entity = datastore.Entity(key=ds.key('visit'))
+    entity.update({
+        'user_ip': user_ip,
+        'timestamp': datetime.datetime.now(tz=datetime.timezone.utc)
+    })
+
+    ds.put(entity)
+    query = ds.query(kind='visit', order=('-timestamp',))
+
+    results = []
+    for x in query.fetch(limit=10):
+        try:
+            results.append('Time: {timestamp} Addr: {user_ip}'.format(**x))
+        except KeyError:
+            print("Error with result format, skipping entry.")
+
+    output = 'Last 10 visits:\n{}'.format('\n'.join(results))
+
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+# [END gae_flex_datastore_app]
+
+
+@app.errorhandler(500)
+def server_error(e):
+    logging.exception('An error occurred during a request.')
+    return """
+    An internal error occurred: <pre>{}</pre>
+    See logs for full stacktrace.
+    """.format(e), 500
 
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
