@@ -58,12 +58,13 @@ def index():
         user_ip = '.'.join(user_ip.split('.')[:2])
 
     entity = datastore.Entity(key=ds.key('visit'))
-    entity.update({
-        'user_ip': user_ip,
-        'timestamp': datetime.datetime.now(tz=datetime.timezone.utc)
-    })
+    # print(dir(entity))
+    # entity.update({
+    #     'user_ip': user_ip,
+    #     'timestamp': datetime.datetime.now(tz=datetime.timezone.utc)
+    # })
 
-    ds.put(entity)
+    # ds.put(entity)
     query = ds.query(kind='visit', order=('-timestamp',))
 
     results = []
@@ -77,6 +78,38 @@ def index():
 
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 # [END gae_flex_datastore_app]
+
+
+@app.route('/user')
+def generate_1000():
+    ds = datastore.Client()
+    entity = datastore.Entity(key=ds.key('User'))
+    entity.update({
+        'first': 'Tabitha',
+        'last': 'Amenueveve',
+        'bio': 'I am a doc',
+        'dob': datetime.datetime.now(tz=datetime.timezone.utc),
+        'height': 5.10,
+        'salary': 20000,
+        'verified': True,
+        'posts': [
+            {
+                'first': 'first posts'
+            }
+        ],
+       
+    })
+
+    res = []
+    query = ds.query(kind='User')
+    for x in query.fetch(limit=5):
+        res.append(x.name)
+
+    output = f"{'\n'.join(res)}"
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+
 
 
 @app.errorhandler(500)
