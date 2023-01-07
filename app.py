@@ -92,20 +92,16 @@ def generate_1000():
         'height': 5.10,
         'salary': 20000,
         'verified': True,
-        'posts': [
-            {
-                'first': 'first posts'
-            }
-        ],
+        'posts': 'nice'
        
     })
 
     res = []
     query = ds.query(kind='User')
-    # for x in query.fetch(limit=5):
-    #     res.append()
+    for x in query.fetch(limit=5):
+        res.append(x)
 
-    output = f"absolutely worked."
+    output = f"{res}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
