@@ -106,7 +106,7 @@ def index():
 @app.route('/create')
 def create_entity():
     client = datastore.Client()
-    user = datastore.Entity(client.key("User"))
+    user = datastore.Entity(client.key("Person"))
     user.update({
         'first': 'Michael',
         'last': 'Boateng',
@@ -116,17 +116,6 @@ def create_entity():
         'salary': 20000,
         'verified': True,
         'posts': 'nice'
-    }, 
-    {
-        'first': 'Tabitha',
-        'last': 'Amenueveve',
-        'bio': 'I am a doc',
-        'dob': "1 st May",
-        'height': 5,
-        'salary': 20000,
-        'verified': True,
-        'posts': 'nice'
-
     })
 
     output = f"Hope they were created"
@@ -136,7 +125,7 @@ def create_entity():
 @app.route('/remove')
 def delete_entities():
     client = datastore.Client()
-    key = client.key('User')
+    key = client.key('Person')
     client.delete(key)
 
     output = f"Hope they were deleted"
@@ -146,7 +135,7 @@ def delete_entities():
 @app.route('/csv')
 def generate_csv():
     client = datastore.Client()
-    query = client.query(kind="User")
+    query = client.query(kind="Person")
 
     users = list(query.fetch())
 
@@ -172,7 +161,7 @@ def generate_csv():
 @app.route('/update-entity')
 def update_an_entity_from_another():
     client = datastore.Client()
-    query = client.query(kind="User")
+    query = client.query(kind="Person")
 
     entity = datastore.Entity(key=client.key('info'))
 
