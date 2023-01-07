@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import csv
 import signal
 import sys
 from types import FrameType
 
-from flask import Flask, request
+from flask import Flask, request, Response, make_response
 
 from utils.logging import logger
 
@@ -24,13 +25,6 @@ import logging
 import socket
 
 from google.cloud import datastore
-
-app = Flask(__name__)
-
-
-import datetime
-
-
 
 app = Flask(__name__)
 
@@ -44,64 +38,153 @@ def is_ipv6(addr):
         return False
 
 
-# [START gae_flex_datastore_app]
+# # [START gae_flex_datastore_app]
+# @app.route('/')
+# def index():
+#     ds = datastore.Client()
+
+#     user_ip = request.remote_addr
+
+#     # Keep only the first two octets of the IP address.
+#     if is_ipv6(user_ip):
+#         user_ip = ':'.join(user_ip.split(':')[:2])
+#     else:
+#         user_ip = '.'.join(user_ip.split('.')[:2])
+
+#     entity = datastore.Entity(key=ds.key('visit'))
+#     # print(dir(entity))
+#     # entity.update({
+#     #     'user_ip': user_ip,
+#     #     'timestamp': datetime.datetime.now(tz=datetime.timezone.utc)
+#     # })
+
+#     # ds.put(entity)
+#     query = ds.query(kind='visit', order=('-timestamp',))
+
+#     results = []
+#     for x in query.fetch(limit=10):
+#         try:
+#             results.append('Time: {timestamp} Addr: {user_ip}'.format(**x))
+#         except KeyError:
+#             print("Error with result format, skipping entry.")
+
+#     output = 'Last 10 visits:\n{}'.format('\n'.join(results))
+
+#     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+# # [END gae_flex_datastore_app]
+
+
+# @app.route('/user')
+# def generate_1000():
+#     ds = datastore.Client()
+#     entity = datastore.Entity(key=ds.key('User'))
+#     entity.update({
+#         'first': 'Tabitha',
+#         'last': 'Amenueveve',
+#         'bio': 'I am a doc',
+#         'dob': datetime.datetime.now(tz=datetime.timezone.utc),
+#         'height': 5.10,
+#         'salary': 20000,
+#         'verified': True,
+#         'posts': 'nice'
+       
+#     })
+
+#     res = []
+#     query = ds.query(kind='User')
+#     for x in query.fetch(limit=5):
+#         res.append(x)
+
+#     output = f"{res}"
+#     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
 @app.route('/')
 def index():
-    ds = datastore.Client()
-
-    user_ip = request.remote_addr
-
-    # Keep only the first two octets of the IP address.
-    if is_ipv6(user_ip):
-        user_ip = ':'.join(user_ip.split(':')[:2])
-    else:
-        user_ip = '.'.join(user_ip.split('.')[:2])
-
-    entity = datastore.Entity(key=ds.key('visit'))
-    # print(dir(entity))
-    # entity.update({
-    #     'user_ip': user_ip,
-    #     'timestamp': datetime.datetime.now(tz=datetime.timezone.utc)
-    # })
-
-    # ds.put(entity)
-    query = ds.query(kind='visit', order=('-timestamp',))
-
-    results = []
-    for x in query.fetch(limit=10):
-        try:
-            results.append('Time: {timestamp} Addr: {user_ip}'.format(**x))
-        except KeyError:
-            print("Error with result format, skipping entry.")
-
-    output = 'Last 10 visits:\n{}'.format('\n'.join(results))
-
+    output = f"Welcome"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-# [END gae_flex_datastore_app]
 
-
-@app.route('/user')
-def generate_1000():
-    ds = datastore.Client()
-    entity = datastore.Entity(key=ds.key('User'))
-    entity.update({
-        'first': 'Tabitha',
-        'last': 'Amenueveve',
-        'bio': 'I am a doc',
-        'dob': datetime.datetime.now(tz=datetime.timezone.utc),
-        'height': 5.10,
+@app.route('/create')
+def create_entity():
+    client = datastore.Client()
+    user = datastore.Entity(client.key("User"))
+    user.update({
+        'first': 'Michael',
+        'last': 'Boateng',
+        'bio': 'Software Engineer',
+        'dob': "1 st May",
+        'height': 5,
         'salary': 20000,
         'verified': True,
         'posts': 'nice'
-       
+    }, 
+    {
+        'first': 'Tabitha',
+        'last': 'Amenueveve',
+        'bio': 'I am a doc',
+        'dob': "1 st May",
+        'height': 5,
+        'salary': 20000,
+        'verified': True,
+        'posts': 'nice'
+
     })
 
-    res = []
-    query = ds.query(kind='User')
-    for x in query.fetch(limit=5):
-        res.append(x)
+    output = f"Hope they were created"
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
-    output = f"{res}"
+
+@app.route('/remove')
+def delete_entities():
+    client = datastore.Client()
+    key = client.key('User')
+    client.delete(key)
+
+    output = f"Hope they were deleted"
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/csv')
+def generate_csv():
+    client = datastore.Client()
+    query = client.query(kind="User")
+
+    users = list(query.fetch())
+
+    # users = [
+    #     {"name":"mick", "age":100},
+    #     {"wow":"tab", "age":100},
+    # ]
+
+    csv_data = ''
+    for user in users:
+        csv_data += f'{user}\n'
+
+
+    response = make_response(csv_data)
+    response.headers['Content-Disposition'] = 'attachment; filename=data.csv'
+    response.headers['Content-Type'] = 'text/csv'
+
+    # Return the response object
+    return response
+
+
+
+@app.route('/update-entity')
+def update_an_entity_from_another():
+    client = datastore.Client()
+    query = client.query(kind="User")
+
+    entity = datastore.Entity(key=client.key('info'))
+
+
+    for user in query.fetch():
+        entity.update({
+            'first': user['first'],
+            'bio': user['bio'],
+        })
+        client.put(entity)
+
+    output = f"Hope it did."
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
