@@ -129,7 +129,7 @@ def create_entity():
             'friends': [fake.name() for _ in range(5)]
         })
 
-        client.put(user)
+    client.put(user)
 
     output = f"Hope they were created"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
@@ -167,7 +167,7 @@ def generate_csv():
         {user['height']}, 
         {user['salary']}, 
         {user['verified']}, 
-        {user['posts']}, 
+        {user['friends']}, 
         """
 
 
