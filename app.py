@@ -63,7 +63,7 @@ def delete_entity(kind_name, entity_id):
     client.delete(key)
 
 
-def generate_csv(filename, query):
+def create_csv(filename, query):
     with open(filename, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow(['cloud_id','name','bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
@@ -96,8 +96,9 @@ def storage_object_in_cloud_bucket(bucket_name, source_file_name, destination_bl
 def index():
     users = query_a_kind('User', 1)
     output = ''
+    first_user = next(users)
     see = ['cloud']
-    see.extend([key for key in users.keys()])
+    see.extend([key for key in first_user.keys()])
 
     for user in users:
      output += f"{users} \n{user.key.id} \n{user.keys()} \nlook:{see}"
@@ -136,9 +137,11 @@ def generate_csv():
 
     source_file_name = 'users.csv'
 
-    csv_file = generate_csv(source_file_name, users)
+    csv_file = create_csv(source_file_name, users)
     
     output = storage_object_in_cloud_bucket('mickeys_store_01', source_file_name, 'new_users_data.csv')
+
+    output += f'\n\n{csv_file}, type: {type(csv_file)}'
 
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
