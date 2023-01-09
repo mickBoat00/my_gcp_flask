@@ -15,6 +15,7 @@
 import csv
 import signal
 import sys
+import datetime
 from types import FrameType
 
 from flask import Flask, request, Response, make_response
@@ -111,11 +112,11 @@ def create_entity():
         'first': 'New',
         'last': 'Boateng',
         'bio': 'Software Engineer',
-        'dob': "1st May",
-        'height': 5,
+        'dob': datetime.date(1997,5,1),
+        'height': 5.6,
         'salary': 2000,
         'verified': True,
-        'posts': 'nice'
+        'posts': ['nice', 'loved it']
     })
 
     client.put(user)
@@ -148,7 +149,16 @@ def generate_csv():
 
     csv_data = ''
     for user in users:
-        csv_data += f"{user['first']}\n"
+        csv_data += f"""
+        {user['first']}, 
+        {user['last']}, 
+        {user['bio']}, 
+        {user['dob']}, 
+        {user['height']}, 
+        {user['salary']}, 
+        {user['verified']}, 
+        {user['posts']}, 
+        """
 
 
     response = make_response(csv_data)
