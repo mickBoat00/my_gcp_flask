@@ -97,7 +97,7 @@ def index():
     users = query_a_kind('User', 1)
     output = ''
     see = ['cloud']
-    see.extend([key for key in user.keys()])
+    see.extend([key for key in users.keys()])
 
     for user in users:
      output += f"{users} \n{user.key.id} \n{user.keys()} \nlook:{see}"
