@@ -1,17 +1,3 @@
-# Copyright 2021 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import csv
 import signal
 import sys
@@ -34,31 +20,17 @@ app = Flask(__name__)
 
 from faker import Faker
 
+client = datastore.Client()
+storage_client = storage.Client()
 
-@app.route('/')
-def index():
-    client = datastore.Client()
-    query = client.query(kind="User")
-
-    users = query.fetch(limit=1)
-
-    output = ''
-
-    for user in users:
-     output += f"{user.key.id}"
-    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
-
-@app.route('/create')
-def create_entity():
-    client = datastore.Client()
+def generate_entities_with_faker(num_of_entites, kind_name):
 
     fake = Faker()
 
     verified_list = [True, False]
 
-    for _ in range(1000):
-        user = datastore.Entity(client.key("User"))
+    for _ in range(num_of_entites):
+        user = datastore.Entity(client.key(kind_name))
         user.update({
             'name': fake.name(),
             'bio': fake.text(),
@@ -77,20 +49,82 @@ def create_entity():
 
         client.put(user)
 
+def query_a_kind(kind_name, limit=None):
+    query = client.query(kind=kind_name)
+    
+    if limit:
+        return query.fetch(limit=limit)
+    
+    return query.fetch()
+
+
+def delete_entity(kind_name, entity_id):
+    key = client.key(kind_name, entity_id)
+    client.delete(key)
+
+
+def generate_csv(filename, query):
+    with open(filename, 'w') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow(['cloud_id','name','bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
+        for obj in query:
+            writer.writerow(
+                [
+                    obj.key.id, 
+                    obj['name'], 
+                    obj['bio'], 
+                    obj['dob'], 
+                    obj['height'], 
+                    obj['salary'], 
+                    obj['verified'], 
+                    obj['friends'],
+                    obj['grades'],
+                ]
+            )
+    return csv_file
+
+
+def storage_object_in_cloud_bucket(bucket_name, source_file_name, destination_blob_name):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+
+    return f"File {source_file_name} uploaded to {destination_blob_name}."
+
+
+@app.route('/')
+def index():
+    users = query_a_kind('User', 1)
+    output = ''
+    see = ['cloud']
+    see.extend([key for key in user.keys()])
+
+    for user in users:
+     output += f"{users} \n{user.key.id} \n{user.keys()} \nlook:{see}"
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/create')
+def create_entity():
+    
+    generate_entities_with_faker(1000, "User")
+
     output = f"Hope they were created"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
+
 @app.route('/remove')
 def delete_entities():
-
-    client = datastore.Client()
-    query = client.query(kind='User')
-    users = query.fetch()
+    users = query_a_kind('User')
 
     for user in users:
-        key = client.key('User', user.key.id)
-        client.delete(key)
+        delete_entity('User', user.key.id)
+
+    infos = query_a_kind('info')
+
+    for info in infos:
+        delete_entity('info', info.key.id)
 
     output = f"Hope they were deleted"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
@@ -98,47 +132,20 @@ def delete_entities():
 
 @app.route('/csv')
 def generate_csv():
-    client = datastore.Client()
-    query = client.query(kind="User")
-
-    users = query.fetch()
+    users = query_a_kind('User')
 
     source_file_name = 'users.csv'
 
-
-    with open(source_file_name, 'w') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['cloud_id','name','bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
-        for user in users:
-            writer.writerow(
-                [
-                    user.key.id, 
-                    user['name'], 
-                    user['bio'], 
-                    user['dob'], 
-                    user['height'], 
-                    user['salary'], 
-                    user['verified'], 
-                    user['friends'],
-                    user['grades'],
-                ]
-            )
+    csv_file = generate_csv(source_file_name, users)
     
-    destination_blob_name = 'users_data.csv'
+    output = storage_object_in_cloud_bucket('mickeys_store_01', source_file_name, 'new_users_data.csv')
 
-    storage_client = storage.Client()
-    bucket = storage_client.bucket('mickeys_store_01')
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(source_file_name)
-
-    output = f"File {source_file_name} uploaded to {destination_blob_name}."
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 @app.route('/update-entity')
 def update_an_entity_from_another():
-    client = datastore.Client()
-    query = client.query(kind="User")
+    query = query_a_kind('User', limit=None)
 
 
     for user in query.fetch():
@@ -152,9 +159,6 @@ def update_an_entity_from_another():
 
     output = f"Hope it did."
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
-
-
 
 
 @app.errorhandler(500)
