@@ -6,3 +6,5 @@ structlog==22.1.0
 
 google-auth==2.3.2
 google-cloud-datastore==2.7.1
+
+Faker==15.3.4

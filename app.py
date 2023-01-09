@@ -15,7 +15,8 @@
 import csv
 import signal
 import sys
-from datetime import datetime
+import datetime
+import random
 from types import FrameType
 
 from flask import Flask, request, Response, make_response
@@ -28,6 +29,9 @@ import socket
 from google.cloud import datastore
 
 app = Flask(__name__)
+
+from faker import Faker
+
 
 
 def is_ipv6(addr):
@@ -108,18 +112,24 @@ def index():
 def create_entity():
     client = datastore.Client()
     user = datastore.Entity(client.key("User"))
-    user.update({
-        'first': 'New',
-        'last': 'Boateng',
-        'bio': 'Software Engineer',
-        'dob': datetime(2022, 12, 28),
-        'height': 5.6,
-        'salary': 2000,
-        'verified': True,
-        'posts': ['nice', 'loved it']
-    })
 
-    client.put(user)
+    fake = Faker()
+
+    verified_list = [True, False]
+
+    for _ in range(1000):
+        user.update({
+            'first': fake.first_name(),
+            'last': fake.first_name(),
+            'bio': fake.text(),
+            'dob': fake.date_time_between(),
+            'height': random.uniform(5.0, 6.0),
+            'salary': random.randint(),
+            'verified': random.choice(verified_list),
+            'friends': [fake.name() for _ in range(5)]
+        })
+
+        client.put(user)
 
     output = f"Hope they were created"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
