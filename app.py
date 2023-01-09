@@ -108,23 +108,25 @@ def generate_csv():
 
     with open(source_file_name, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['bio', 'dob', 'height', 'salary', 'verified', 'friends'])
+        writer.writerow(['cloud_id','name','bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
         for user in users:
             writer.writerow(
                 [
+                    user.key.id, 
+                    user['name'], 
                     user['bio'], 
                     user['dob'], 
                     user['height'], 
                     user['salary'], 
                     user['verified'], 
                     user['friends'],
+                    user['grades'],
                 ]
             )
     
     destination_blob_name = 'users_data.csv'
 
-
-    storage_client = storage.CLient()
+    storage_client = storage.Client()
     bucket = storage_client.bucket('mickeys_store_01')
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(source_file_name)
