@@ -41,7 +41,7 @@ def index():
     query = client.query(kind="User")
 
     user = query.fetch(limit=1)
-    output = f"{user}"
+    output = f"{user[0]}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
