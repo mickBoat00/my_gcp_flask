@@ -111,13 +111,14 @@ def index():
 @app.route('/create')
 def create_entity():
     client = datastore.Client()
-    user = datastore.Entity(client.key("User"))
+    
 
     fake = Faker()
 
     verified_list = [True, False]
 
     for _ in range(1000):
+        user = datastore.Entity(client.key("User"))
         user.update({
             'first': fake.first_name(),
             'last': fake.first_name(),
@@ -129,7 +130,7 @@ def create_entity():
             'friends': [fake.name() for _ in range(5)]
         })
 
-    client.put(user)
+        client.put(user)
 
     output = f"Hope they were created"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
@@ -185,14 +186,14 @@ def update_an_entity_from_another():
     client = datastore.Client()
     query = client.query(kind="User")
 
-    entity = datastore.Entity(key=client.key('info'))
-
 
     for user in query.fetch():
+        entity = datastore.Entity(key=client.key('info'))
         entity.update({
             'first': user['first'],
             'bio': user['bio'],
         })
+    
         client.put(entity)
 
     output = f"Hope it did."
