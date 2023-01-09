@@ -124,7 +124,7 @@ def create_entity():
             'bio': fake.text(),
             'dob': fake.date_time_between(),
             'height': random.uniform(5.0, 6.0),
-            'salary': random.randint(),
+            'salary': random.randint(5000,10000),
             'verified': random.choice(verified_list),
             'friends': [fake.name() for _ in range(5)]
         })
