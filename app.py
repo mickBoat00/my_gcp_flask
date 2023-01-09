@@ -106,17 +106,19 @@ def index():
 @app.route('/create')
 def create_entity():
     client = datastore.Client()
-    user = datastore.Entity(client.key("Person"))
+    user = datastore.Entity(client.key("User"))
     user.update({
         'first': 'Michael',
         'last': 'Boateng',
         'bio': 'Software Engineer',
         'dob': "1 st May",
-        'height': 5,
-        'salary': 20000,
-        'verified': True,
+        'height': "5",
+        'salary': "20000",
+        'verified': "True",
         'posts': 'nice'
     })
+
+    client.put(user)
 
     output = f"Hope they were created"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
