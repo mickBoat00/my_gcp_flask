@@ -15,7 +15,7 @@
 import csv
 import signal
 import sys
-import datetime
+from datetime import datetime
 from types import FrameType
 
 from flask import Flask, request, Response, make_response
