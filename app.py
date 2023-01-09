@@ -112,7 +112,7 @@ def create_entity():
         'first': 'New',
         'last': 'Boateng',
         'bio': 'Software Engineer',
-        'dob': datetime.date(1997,5,1),
+        'dob': datetime(2022, 12, 28),
         'height': 5.6,
         'salary': 2000,
         'verified': True,
