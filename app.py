@@ -37,7 +37,11 @@ from faker import Faker
 
 @app.route('/')
 def index():
-    output = f"Welcome"
+    client = datastore.Client()
+    query = client.query(kind="User")
+
+    user = query.fetch(limit=1)
+    output = f"{user}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
@@ -81,7 +85,7 @@ def delete_entities():
     users = query.fetch()
 
     for user in users:
-        key = client.key('User', user['Name/ID'])
+        key = client.key('User')
         client.delete(key)
 
     output = f"Hope they were deleted"
@@ -100,11 +104,10 @@ def generate_csv():
 
     with open(source_file_name, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['id','name', 'bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
+        writer.writerow(['name', 'bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
         for user in users:
             writer.writerow(
                 [
-                    user['Name/ID'], 
                     user['first'], 
                     user['last'], 
                     user['bio'], 
@@ -138,7 +141,7 @@ def update_an_entity_from_another():
     for user in query.fetch():
         entity = datastore.Entity(key=client.key('info'))
         entity.update({
-            'first': user['first'],
+            'name': user['name'],
             'bio': user['bio'],
         })
     
