@@ -45,7 +45,7 @@ def index():
     output = ''
 
     for user in users:
-     output += f"{user}"
+     output += f"{user.key.id}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
@@ -108,12 +108,10 @@ def generate_csv():
 
     with open(source_file_name, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['name', 'bio', 'dob', 'height', 'salary', 'verified', 'friends'])
+        writer.writerow(['bio', 'dob', 'height', 'salary', 'verified', 'friends'])
         for user in users:
             writer.writerow(
                 [
-                    user['first'], 
-                    user['last'], 
                     user['bio'], 
                     user['dob'], 
                     user['height'], 
