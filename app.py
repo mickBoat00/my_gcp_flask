@@ -17,9 +17,10 @@ import signal
 import sys
 import datetime
 import random
+import csv
 from types import FrameType
 
-from flask import Flask, request, Response, make_response
+from flask import Flask
 
 from utils.logging import logger
 
@@ -27,91 +28,22 @@ import logging
 import socket
 
 from google.cloud import datastore
+from google.cloud import storage
 
 app = Flask(__name__)
 
 from faker import Faker
 
 
-
-def is_ipv6(addr):
-    """Checks if a given address is an IPv6 address."""
-    try:
-        socket.inet_pton(socket.AF_INET6, addr)
-        return True
-    except socket.error:
-        return False
-
-
-# # [START gae_flex_datastore_app]
-# @app.route('/')
-# def index():
-#     ds = datastore.Client()
-
-#     user_ip = request.remote_addr
-
-#     # Keep only the first two octets of the IP address.
-#     if is_ipv6(user_ip):
-#         user_ip = ':'.join(user_ip.split(':')[:2])
-#     else:
-#         user_ip = '.'.join(user_ip.split('.')[:2])
-
-#     entity = datastore.Entity(key=ds.key('visit'))
-#     # print(dir(entity))
-#     # entity.update({
-#     #     'user_ip': user_ip,
-#     #     'timestamp': datetime.datetime.now(tz=datetime.timezone.utc)
-#     # })
-
-#     # ds.put(entity)
-#     query = ds.query(kind='visit', order=('-timestamp',))
-
-#     results = []
-#     for x in query.fetch(limit=10):
-#         try:
-#             results.append('Time: {timestamp} Addr: {user_ip}'.format(**x))
-#         except KeyError:
-#             print("Error with result format, skipping entry.")
-
-#     output = 'Last 10 visits:\n{}'.format('\n'.join(results))
-
-#     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-# # [END gae_flex_datastore_app]
-
-
-# @app.route('/user')
-# def generate_1000():
-#     ds = datastore.Client()
-#     entity = datastore.Entity(key=ds.key('User'))
-#     entity.update({
-#         'first': 'Tabitha',
-#         'last': 'Amenueveve',
-#         'bio': 'I am a doc',
-#         'dob': datetime.datetime.now(tz=datetime.timezone.utc),
-#         'height': 5.10,
-#         'salary': 20000,
-#         'verified': True,
-#         'posts': 'nice'
-       
-#     })
-
-#     res = []
-#     query = ds.query(kind='User')
-#     for x in query.fetch(limit=5):
-#         res.append(x)
-
-#     output = f"{res}"
-#     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
 @app.route('/')
 def index():
     output = f"Welcome"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    
 
 @app.route('/create')
 def create_entity():
     client = datastore.Client()
-    
 
     fake = Faker()
 
@@ -120,14 +52,19 @@ def create_entity():
     for _ in range(1000):
         user = datastore.Entity(client.key("User"))
         user.update({
-            'first': fake.first_name(),
-            'last': fake.first_name(),
+            'name': fake.name(),
             'bio': fake.text(),
             'dob': fake.date_time_between(),
             'height': random.uniform(5.0, 6.0),
             'salary': random.randint(5000,10000),
             'verified': random.choice(verified_list),
-            'friends': [fake.name() for _ in range(5)]
+            'friends': [fake.name() for _ in range(5)],
+            'grades': {
+                '100': 3.5,
+                '200': 3.9,
+                '300': 3.0,
+                '400': 3.9,
+            }
         })
 
         client.put(user)
@@ -138,9 +75,14 @@ def create_entity():
 
 @app.route('/remove')
 def delete_entities():
+
     client = datastore.Client()
-    key = client.key('User')
-    client.delete(key)
+    query = client.query(kind='User')
+    users = query.fetch()
+
+    for user in users:
+        key = client.key('User', user['id'])
+        client.delete(key)
 
     output = f"Hope they were deleted"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
@@ -153,32 +95,38 @@ def generate_csv():
 
     users = query.fetch()
 
-    # users = [
-    #     {"name":"mick", "age":100},
-    #     {"wow":"tab", "age":100},
-    # ]
-
-    csv_data = ''
-    for user in users:
-        csv_data += f"""
-        {user['first']}, 
-        {user['last']}, 
-        {user['bio']}, 
-        {user['dob']}, 
-        {user['height']}, 
-        {user['salary']}, 
-        {user['verified']}, 
-        {user['friends']}, 
-        """
+    source_file_name = 'users.csv'
 
 
-    response = make_response(csv_data)
-    response.headers['Content-Disposition'] = 'attachment; filename=data.csv'
-    response.headers['Content-Type'] = 'text/csv'
+    with open(source_file_name, 'w') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow(['id','name', 'bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
+        for user in users:
+            writer.writerow(
+                [
+                    user['id'], 
+                    user['first'], 
+                    user['last'], 
+                    user['bio'], 
+                    user['dob'], 
+                    user['height'], 
+                    user['salary'], 
+                    user['verified'], 
+                    user['friends'],
+                    user['grades']
+                ]
+            )
+    
+    destination_blob_name = 'users_data.csv'
 
-    # Return the response object
-    return response
 
+    storage_client = storage.CLient()
+    bucket = storage_client.bucket('mickeys_store_01')
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+
+    output = f"File {source_file_name} uploaded to {destination_blob_name}."
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 @app.route('/update-entity')
@@ -233,3 +181,31 @@ if __name__ == "__main__":
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)
+
+
+
+
+
+
+# users = [
+    #     {
+    #         'first': 'mike' , 
+    #         'last': 'boat', 
+    #         'bio': 'a rich engineer', 
+    #         'dob': 'November 11, 2000 at 4:35:52 PM UTC+0', 
+    #         'height': 5.6, 
+    #         'salary': 1000, 
+    #         'verified': 'true', 
+    #         'friends': ["Stuart Hill","Timothy Spencer","Tracy Obrien","Ms. Carol Cuevas DVM","Sarah Craig"]
+    #     },
+    #     {
+    #         'first': 'new' , 
+    #         'last': 'one', 
+    #         'bio': 'a rich engineer', 
+    #         'dob': 'November 11, 2000 at 4:35:52 PM UTC+0', 
+    #         'height': 5.6, 
+    #         'salary': 1000, 
+    #         'verified': 'true', 
+    #         'friends': ["Stuart Hill","Timothy Spencer","Tracy Obrien","Ms. Carol Cuevas DVM","Sarah Craig"]
+    #     }
+    # ]

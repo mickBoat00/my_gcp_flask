@@ -1,2 +1,3 @@
-name,age
-wow,age
+first,last,bio,dob,height,salary,verified,friends
+mike,boat,a rich engineer,"November 11, 2000 at 4:35:52 PM UTC+0",5.6,1000,true,"['Stuart Hill', 'Timothy Spencer', 'Tracy Obrien', 'Ms. Carol Cuevas DVM', 'Sarah Craig']"
+new,one,a rich engineer,"November 11, 2000 at 4:35:52 PM UTC+0",5.6,1000,true,"['Stuart Hill', 'Timothy Spencer', 'Tracy Obrien', 'Ms. Carol Cuevas DVM', 'Sarah Craig']"
