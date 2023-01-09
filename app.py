@@ -40,8 +40,12 @@ def index():
     client = datastore.Client()
     query = client.query(kind="User")
 
-    user = query.fetch(limit=1)
-    output = f"{user[0]}"
+    users = query.fetch(limit=1)
+
+    output = ''
+
+    for user in users:
+     output += f"{user}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
@@ -104,7 +108,7 @@ def generate_csv():
 
     with open(source_file_name, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['name', 'bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
+        writer.writerow(['name', 'bio', 'dob', 'height', 'salary', 'verified', 'friends'])
         for user in users:
             writer.writerow(
                 [
@@ -116,7 +120,6 @@ def generate_csv():
                     user['salary'], 
                     user['verified'], 
                     user['friends'],
-                    user['grades']
                 ]
             )
     
