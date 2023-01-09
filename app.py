@@ -39,7 +39,7 @@ from faker import Faker
 def index():
     output = f"Welcome"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-    
+
 
 @app.route('/create')
 def create_entity():
@@ -81,7 +81,7 @@ def delete_entities():
     users = query.fetch()
 
     for user in users:
-        key = client.key('User', user['id'])
+        key = client.key('User', user['Name/ID'])
         client.delete(key)
 
     output = f"Hope they were deleted"
@@ -104,7 +104,7 @@ def generate_csv():
         for user in users:
             writer.writerow(
                 [
-                    user['id'], 
+                    user['Name/ID'], 
                     user['first'], 
                     user['last'], 
                     user['bio'], 
