@@ -100,8 +100,8 @@ def index():
     see = ['cloud']
     see.extend([key for key in first_user.keys()])
 
-    for user in users:
-     output += f"{users} \n{user.key.id} \n{user.keys()} \nlook:{see}"
+    
+    output += f"{users} \n{first_user.key.id} \n{first_user.keys()} \nlook:{see}"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
