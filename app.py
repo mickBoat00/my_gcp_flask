@@ -89,7 +89,7 @@ def delete_entities():
     users = query.fetch()
 
     for user in users:
-        key = client.key('User')
+        key = client.key('User', user.key.id)
         client.delete(key)
 
     output = f"Hope they were deleted"
