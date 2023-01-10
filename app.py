@@ -199,16 +199,21 @@ def pubsub_sub_messages():
 
     output = ''
 
+    for a in streaming_pull_future:
+
+
+        output += f'{a}\n'
+
     with subscriber:
         try:
     
             streaming_pull_future.result(timeout=timeout)
-            output += f'streaming_pull_future: {streaming_pull_future.result(timeout=timeout)}\n'
+            # output += f'streaming_pull_future: {streaming_pull_future.result(timeout=timeout)}\n'
         except TimeoutError:
             streaming_pull_future.cancel()  
             streaming_pull_future.result()  
 
-    output += f"{streaming_pull_future}."
+    # output += f"{streaming_pull_future}."
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
