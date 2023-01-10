@@ -15,6 +15,8 @@ import socket
 
 from google.cloud import datastore
 from google.cloud import storage
+from google.cloud import pubsub_v1
+from concurrent.futures import TimeoutError
 
 app = Flask(__name__)
 
@@ -22,6 +24,8 @@ from faker import Faker
 
 client = datastore.Client()
 storage_client = storage.Client()
+publisher = pubsub_v1.PublisherClient()
+subscriber = pubsub_v1.SubscriberClient()
 
 def generate_entities_with_faker(num_of_entites, kind_name):
 
@@ -62,25 +66,25 @@ def delete_entity(kind_name, entity_id):
     key = client.key(kind_name, entity_id)
     client.delete(key)
 
+def delete_entities_of_a_query(kind_name, query):
+    for obj in query:
+        delete_entity(kind_name, obj.key.id)
+
 
 def create_csv(filename, query):
+    csv_header = ['cloud_id']
+    first_item = next(query)
+    csv_header.extend([key for key in first_item.keys()])
+
     with open(filename, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['cloud_id','name','bio', 'dob', 'height', 'salary', 'verified', 'friends', 'grades'])
+        writer.writerow(csv_header)
         for obj in query:
-            writer.writerow(
-                [
-                    obj.key.id, 
-                    obj['name'], 
-                    obj['bio'], 
-                    obj['dob'], 
-                    obj['height'], 
-                    obj['salary'], 
-                    obj['verified'], 
-                    obj['friends'],
-                    obj['grades'],
-                ]
-            )
+            obj_values = [obj.key.id]
+            for key in csv_header:
+                obj_values.append(obj[key])
+
+            writer.writerow(obj_values)
     return csv_file
 
 
@@ -90,6 +94,13 @@ def storage_object_in_cloud_bucket(bucket_name, source_file_name, destination_bl
     blob.upload_from_filename(source_file_name)
 
     return f"File {source_file_name} uploaded to {destination_blob_name}."
+
+
+def send_message_to_pubsub_topic(project_id, topic_id, message):
+    topic_path = publisher.topic_path(project_id, topic_id)
+    message = message.encode("utf-8")
+    publisher.publish(topic_path, message)
+    print(f"Published messages to {topic_path}.")
 
 
 @app.route('/')
@@ -119,13 +130,12 @@ def create_entity():
 def delete_entities():
     users = query_a_kind('User')
 
-    for user in users:
-        delete_entity('User', user.key.id)
 
+    
     infos = query_a_kind('info')
 
-    for info in infos:
-        delete_entity('info', info.key.id)
+    delete_entities_of_a_query('User', users)
+    delete_entities_of_a_query('info', infos)
 
     output = f"Hope they were deleted"
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
@@ -148,19 +158,57 @@ def generate_csv():
 
 @app.route('/update-entity')
 def update_an_entity_from_another():
-    query = query_a_kind('User', limit=None)
+    query = query_a_kind('User', limit=5)
 
+    project_id = 'serene-coyote-373909'
+    topic_id = 'user-modified-messages'
 
     for user in query.fetch():
         entity = datastore.Entity(key=client.key('info'))
+        modify_name = f"{user['name']} was modified."
+        modify_bio = f"UPDATED {user['bio']}"
+
         entity.update({
-            'name': user['name'],
-            'bio': user['bio'],
+            'name': modify_name,
+            'bio': modify_bio,
         })
     
         client.put(entity)
 
+        pubsub_message = f'{modify_name} and {modify_bio}'
+
+        send_message_to_pubsub_topic(project_id, topic_id, pubsub_message)
+
     output = f"Hope it did."
+    return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+@app.route('/messages')
+def pubsub_sub_messages():
+    project_id = 'serene-coyote-373909'
+    subscription_id = 'subA'
+    timeout = 5.0
+
+    subscription_path = subscriber.subscription_path(project_id, subscription_id)
+
+    def callback(message: pubsub_v1.subscriber.message.Message) -> None:
+        print(f"Received {message}.")
+        message.ack()
+
+    streaming_pull_future = subscriber.subscribe(subscription_path, callback=callback)
+    print(f"Listening for messages on {subscription_path}..\n")
+
+    output = ''
+
+    with subscriber:
+        try:
+    
+            streaming_pull_future.result(timeout=timeout)
+            output += f'streaming_pull_future: {streaming_pull_future.result(timeout=timeout)}\n'
+        except TimeoutError:
+            streaming_pull_future.cancel()  
+            streaming_pull_future.result()  
+
+    output += f"{streaming_pull_future}."
     return output, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
