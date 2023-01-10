@@ -89,7 +89,7 @@ def create_csv(filename, query):
 
             obj_values = [obj.key.id]
             
-            for key in csv_header:
+            for key in csv_header[2:]:
                 obj_values.append(obj[key])
 
             writer.writerow(obj_values)
