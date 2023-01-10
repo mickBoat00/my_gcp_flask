@@ -194,7 +194,7 @@ def pubsub_sub_messages():
         print(f"Received {message}.")
         msg = datastore.Entity(client.key('Pub_Messages'))
         msg.update({
-            'message': f'{message}',
+            'message': f'{message["data"]}',
         })
         client.put(msg)
         message.ack()
