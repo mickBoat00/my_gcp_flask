@@ -73,13 +73,14 @@ def delete_entities_of_a_query(kind_name, query):
 
 def create_csv(filename, query):
     csv_header = ['cloud_id']
+    main_query = query
     first_item = next(query)
     csv_header.extend([key for key in first_item.keys()])
 
     with open(filename, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow(csv_header)
-        for obj in list(query):
+        for obj in main_query:
             obj_values = [obj.key.id]
             for key in csv_header:
                 obj_values.append(obj[key])
@@ -129,11 +130,7 @@ def create_entity():
 @app.route('/remove')
 def delete_entities():
     users = query_a_kind('User')
-
-
-
     infos = query_a_kind('info')
-
     delete_entities_of_a_query('User', users)
     delete_entities_of_a_query('info', infos)
 
@@ -145,11 +142,9 @@ def delete_entities():
 def generate_csv():
     users = query_a_kind('User')
 
-    source_file_name = 'users.csv'
-
-    csv_file = create_csv(source_file_name, users)
+    csv_file = create_csv('users.csv', users)
     
-    output = storage_object_in_cloud_bucket('mickeys_store_01', source_file_name, 'new_users_data.csv')
+    output = storage_object_in_cloud_bucket('mickeys_store_01', 'users.csv', 'new_users_data.csv')
 
     output += f'\n\n{csv_file}, type: {type(csv_file)}'
 
@@ -246,31 +241,3 @@ if __name__ == "__main__":
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)
-
-
-
-
-
-
-# users = [
-    #     {
-    #         'first': 'mike' , 
-    #         'last': 'boat', 
-    #         'bio': 'a rich engineer', 
-    #         'dob': 'November 11, 2000 at 4:35:52 PM UTC+0', 
-    #         'height': 5.6, 
-    #         'salary': 1000, 
-    #         'verified': 'true', 
-    #         'friends': ["Stuart Hill","Timothy Spencer","Tracy Obrien","Ms. Carol Cuevas DVM","Sarah Craig"]
-    #     },
-    #     {
-    #         'first': 'new' , 
-    #         'last': 'one', 
-    #         'bio': 'a rich engineer', 
-    #         'dob': 'November 11, 2000 at 4:35:52 PM UTC+0', 
-    #         'height': 5.6, 
-    #         'salary': 1000, 
-    #         'verified': 'true', 
-    #         'friends': ["Stuart Hill","Timothy Spencer","Tracy Obrien","Ms. Carol Cuevas DVM","Sarah Craig"]
-    #     }
-    # ]
