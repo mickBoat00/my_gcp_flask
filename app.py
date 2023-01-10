@@ -192,24 +192,22 @@ def pubsub_sub_messages():
 
     def callback(message: pubsub_v1.subscriber.message.Message) -> None:
         print(f"Received {message}.")
+        msg = datastore.Entity(client.key('Pub_Messages'))
+        msg.update({
+            'message': f'{message}',
+        })
+        client.put(msg)
         message.ack()
 
     streaming_pull_future = subscriber.subscribe(subscription_path, callback=callback)
     print(f"Listening for messages on {subscription_path}..\n")
 
-    output = ''
-
-    
+    output = 'Done>>'
 
     with subscriber:
         try:
     
-            # streaming_pull_future.result(timeout=timeout)
-            # output += f'streaming_pull_future: {streaming_pull_future.result(timeout=timeout)}\n'
-            for a in streaming_pull_future.result(timeout=timeout):
-
-
-                output += f'{a}\n'
+            streaming_pull_future.result(timeout=timeout)
         except TimeoutError:
             streaming_pull_future.cancel()  
             streaming_pull_future.result()  
