@@ -73,15 +73,22 @@ def delete_entities_of_a_query(kind_name, query):
 
 def create_csv(filename, query):
     csv_header = ['cloud_id']
-    main_query = query
-    first_item = next(query)
-    csv_header.extend([key for key in first_item.keys()])
+    # main_query = query
+    # first_item = next(query)
+    # csv_header.extend([key for key in first_item.keys()])
+
+    count = 1
 
     with open(filename, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(csv_header)
-        for obj in main_query:
+        for obj in query:
+            while count < 2:
+                csv_header.extend([key for key in obj.keys()])
+                writer.writerow(csv_header)
+                count += 1
+
             obj_values = [obj.key.id]
+            
             for key in csv_header:
                 obj_values.append(obj[key])
 
