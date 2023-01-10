@@ -79,7 +79,7 @@ def create_csv(filename, query):
     with open(filename, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow(csv_header)
-        for obj in query:
+        for obj in list(query):
             obj_values = [obj.key.id]
             for key in csv_header:
                 obj_values.append(obj[key])
@@ -131,7 +131,7 @@ def delete_entities():
     users = query_a_kind('User')
 
 
-    
+
     infos = query_a_kind('info')
 
     delete_entities_of_a_query('User', users)
@@ -163,7 +163,7 @@ def update_an_entity_from_another():
     project_id = 'serene-coyote-373909'
     topic_id = 'user-modified-messages'
 
-    for user in query.fetch():
+    for user in query:
         entity = datastore.Entity(key=client.key('info'))
         modify_name = f"{user['name']} was modified."
         modify_bio = f"UPDATED {user['bio']}"
